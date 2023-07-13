@@ -1,0 +1,50 @@
+version: "3.1"
+services:
+  loki:
+    image: grafana/loki:master
+    container_name: loki
+    restart: always
+    ports:
+      - "3100:3100"
+    volumes:
+      - ./loki/etc/:/etc/loki/
+      - ./loki/opt/:/opt/loki/
+    command: -config.file=/etc/loki/loki-local-config.yaml
+    networks:
+      redis-cluster-net:
+        ipv4_address: 192.168.200.38
+  grafana:
+    image: grafana/grafana:master
+    restart: always
+    environment:
+      - TZ=Asia/Shanghai
+      - LANG=zh_CN.UTF-8
+    ports:
+      - 3000:3000
+    networks:
+      redis-cluster-net:
+        ipv4_address: 192.168.200.39
+  fluentd:
+    image: grafana/fluent-plugin-loki:master
+    ports:
+      - 24224:24224
+    command:
+      - "fluentd"
+      - "-v"
+      - "-p"
+      - "/fluentd/plugins"
+    environment:
+      LOKI_URL: http://192.168.200.38:3100
+      # LOKI_URL: http://loki:3100
+      LOKI_USERNAME:
+      LOKI_PASSWORD:
+    volumes:
+      - ./fluentd/log:/fluentd/log
+      - ./fluentd/etc:/fluentd/etc
+    networks:
+      redis-cluster-net:
+        ipv4_address: 192.168.200.40
+networks:
+  redis-cluster-net:
+    external:
+      name: redis-cluster-net
